@@ -1,1 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SerenAI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(145deg, #1e2a3a, #3388ff);
+      font-family: 'Comfortaa', 'Poppins', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: #ffffff;
+    }
+    .phone {
+      background: linear-gradient(160deg, #3388ff 70%, #1e2a3a 100%);
+      border: 3px solid #66a6ff;
+      border-radius: 40px;
+      width: 360px;
+      max-width: 95vw;
+      padding: 20px 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #eaf6ff;
+      margin: 10px 0 6px 0;
+      text-align: center;
+    }
+    .subtitle {
+      font-size: 0.95rem;
+      font-weight: 300;
+      color: #b0d8ff;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .face-container {
+      width: 220px;
+      height: 220px;
+      margin: 12px 0;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 18px rgba(255,255,255,0.1);
+      background: #fff;
+    }
+    .face-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .conversation {
+      width: 100%;
+      height: 120px;
+      overflow-y: auto;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 14px;
+      font-size: 0.95rem;
+    }
+    .message {
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+    .ai-message {
+      color: #ffe066;
+    }
+    .user-message {
+      color: #a4f0ff;
+      text-align: right;
+    }
+    .btn {
+      padding: 12px 24px;
+      border-radius: 28px;
+      font-weight: bold;
+      font-size: 1rem;
+      border: none;
+      cursor: pointer;
+      background: #66a6ff;
+      color: white;
+      transition: 0.3s ease;
+      margin-top: 4px;
+    }
+    .btn:hover {
+      background: #4e92f0;
+    }
+    .footer {
+      font-size: 0.78rem;
+      text-align: center;
+      margin-top: 16px;
+      color: #bbd4ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="title">SerenAI</div>
+    <div class="subtitle">Your safe space to reflect and talk 💬</div>
+    <div class="face-container">
+      <img id="faceGif" src="/static/gifs/idle.gif" alt="AI Face"/>
+    </div>
+    <div class="conversation" id="conversationArea"></div>
+    <button class="btn" id="startVoice">Start Talking</button>
+    <div class="footer">SerenAI © 2025 — You're never alone 💙</div>
+  </div>
 
+  <script>
+    const startVoiceBtn = document.getElementById("startVoice");
+    const faceGif = document.getElementById("faceGif");
+    const convo = document.getElementById("conversationArea");
+    let isListening = false;
+    let ws = null;
+
+    function appendMessage(text, sender = "ai") {
+      const div = document.createElement("div");
+      div.className = "message " + (sender === "user" ? "user-message" : "ai-message");
+      div.textContent = text;
+      convo.appendChild(div);
+      convo.scrollTop = convo.scrollHeight;
+    }
+
+    function connectWebSocket() {
+      ws = new WebSocket(`ws://${window.location.host}/ws`);
+      ws.onopen = () => console.log("WebSocket connected");
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === "user") {
+          appendMessage(data.message, "user");
+        } else if (data.type === "ai") {
+          faceGif.src = "/static/gifs/talking.gif";
+          appendMessage(data.message, "ai");
+          setTimeout(() => {
+            faceGif.src = "/static/gifs/idle.gif";
+          }, 3000);
+        }
+      };
+      ws.onerror = (e) => console.error("WebSocket error", e);
+      ws.onclose = () => console.log("WebSocket disconnected");
+    }
+
+    async function startVoice() {
+      try {
+        isListening = !isListening;
+        startVoiceBtn.textContent = isListening ? "Stop Talking" : "Start Talking";
+        if (ws && ws.readyState === 1) {
+          ws.send(JSON.stringify({ type: isListening ? "start_voice" : "stop_voice" }));
+        }
+        await fetch(isListening ? "/start-voice" : "/stop-voice");
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    }
+
+    startVoiceBtn.addEventListener("click", startVoice);
+    connectWebSocket();
+  </script>
+</body>
+</html>
