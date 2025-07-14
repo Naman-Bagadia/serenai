@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+hume
+websockets
+jinja2
+aiofiles
