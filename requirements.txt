@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-hume
+hume==0.7.0
 websockets
 jinja2
 aiofiles
